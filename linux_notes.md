@@ -319,8 +319,8 @@ clang --target=riscv64-linux-gnu -static -g source.c -o program
 
 | 角色 | 系统 / 版本 | OpenSSH 版本 | IP 地址 | 备注 |
 | :--- | :--- | :--- | :--- | :--- |
-| A 机 | Ubuntu 22.04.5 LTS | OpenSSH_8.9p1 Ubuntu-3ubuntu0.13 | `10.17.128.233` | 客户端，已存在 `~/.ssh/id_ed25519*` 密钥对 |
-| B 机 | Ubuntu 24.04.3 LTS | OpenSSH_9.6p1 Ubuntu-3ubuntu13.14 | `10.19.139.133` | 服务器，需要安装 `openssh-server` |
+| A 机 | Ubuntu 22.04.5 LTS | OpenSSH_8.9p1 Ubuntu-3ubuntu0.13 | `xxx.xxx.xxx.xxx` | 客户端，已存在 `~/.ssh/id_ed25519*` 密钥对 |
+| B 机 | Ubuntu 24.04.3 LTS | OpenSSH_9.6p1 Ubuntu-3ubuntu13.14 | `xxx.xxx.xxx.xxx` | 服务器，需要安装 `openssh-server` |
 
 ### 9.2 连通性测试与 `ping` 详解
 

@@ -326,20 +326,20 @@ clang --target=riscv64-linux-gnu -static -g source.c -o program
 
 - `ping <目标IP>`：向目标发送 ICMP Echo 请求，验证网络连通性与时延。
 - 常用参数：
-  - `-c <次数>`：限定发送次数，避免一直运行（例如 `ping -c 4 10.19.139.133`）。
+  - `-c <次数>`：限定发送次数，避免一直运行（例如 `ping -c 4 xxx.xxx.xxx.xxx`）。
   - `-i <秒>`：两次请求之间的间隔，默认 1 秒。
   - `-W <秒>`：等待回复的超时时间，默认 1 秒。
   - `-4` / `-6`：强制使用 IPv4 / IPv6。
 - 典型输出解析：
   ```bash
-  ping -c 4 10.19.139.133
+  ping -c 4 xxx.xxx.xxx.xxx
   ```
   返回示例：
   ```
-  PING 10.19.139.133 (10.19.139.133) 56(84) bytes of data.
-  64 bytes from 10.19.139.133: icmp_seq=1 ttl=63 time=3.69 ms
+  PING xxx.xxx.xxx.xxx (xxx.xxx.xxx.xxx) 56(84) bytes of data.
+  64 bytes from xxx.xxx.xxx.xxx: icmp_seq=1 ttl=63 time=3.69 ms
   ...
-  --- 10.19.139.133 ping statistics ---
+  --- xxx.xxx.xxx.xxx ping statistics ---
   4 packets transmitted, 4 received, 0% packet loss, time 3005ms
   rtt min/avg/max/mdev = 3.317/6.744/15.928/3.174 ms
   ```
@@ -377,7 +377,7 @@ clang --target=riscv64-linux-gnu -static -g source.c -o program
 4. **确认双方网络互通**
 	```bash
 	# A 机执行
-	ping 10.19.139.133
+	ping xxx.xxx.xxx.xxx
 	```
 	期望输出：持续收到 `64 bytes from ... time=... ms`，丢包率为 0%。
 
@@ -386,24 +386,24 @@ clang --target=riscv64-linux-gnu -static -g source.c -o program
 1. **确定目标账号**：在 B 机上运行 `whoami`，确认需要免密登录的用户名（本次为 `l`）。
 2. **部署公钥（默认端口 22）**
 	```bash
-	ssh-copy-id -i ~/.ssh/id_ed25519.pub l@10.19.139.133
+	ssh-copy-id -i ~/.ssh/id_ed25519.pub l@xxx.xxx.xxx.xxx
 	```
 	首次会询问是否信任主机指纹，输入 `yes`，随后输入 B 机账户密码。
 	期望输出：
 	```
 	Number of key(s) added: 1
-	Now try logging into the machine, with:   "ssh 'l@10.19.139.133'"
+	Now try logging into the machine, with:   "ssh 'l@xxx.xxx.xxx.xxx'"
 	```
 3. **验证免密登录**
 	```bash
-	ssh l@10.19.139.133
+	ssh l@xxx.xxx.xxx.xxx
 	```
 	登录成功后使用 `exit` 或 `Ctrl+D` 返回 A 机终端。
 4. **可选：为 A 机配置别名**
 	编辑 `~/.ssh/config`，新增：
 	```
 	Host b-server
-		 HostName 10.19.139.133
+		 HostName xxx.xxx.xxx.xxx
 		 User l
 		 Port 22
 		 IdentityFile ~/.ssh/id_ed25519
@@ -417,20 +417,19 @@ clang --target=riscv64-linux-gnu -static -g source.c -o program
 | :--- | :--- | :--- | :--- |
 | 1 | `ssh-copy-id user@B主机` → `Could not resolve hostname b…` | 使用了中文别名 “B主机”，DNS 无法解析 | 改用实际 IP 或在 `~/.ssh/config` 中定义英文 Host 别名 |
 | 2 | `ssh -p 563 …` → `Connection refused`，`ss -tlnp` 仅见 `:22` | 仅把 `Port 22` 改成 `Port 563`，sshd 未成功监听自定义端口 | 在 `sshd_config` 中同时保留 `Port 22` 与 `Port 563`，`sudo sshd -t && sudo systemctl reload ssh`，并 `sudo ufw allow 563/tcp`；若仍失败，先回退使用 22 完成部署 |
-| 3 | `ssh-copy-id …` → `Host key verification failed` | `~/.ssh/known_hosts` 保存了旧指纹，与当前 B 机不一致 | 在 A 机运行 `ssh-keygen -R 10.19.139.133` 后重新连接并接受新指纹 |
-| 4 | `ssh-copy-id -i … user@…` → 多次提示密码错误 | B 机账号并非 `user`，实际用户名是 `l` | 在 B 机使用 `whoami` 查明用户名，改用 `ssh-copy-id -i … l@10.19.139.133` |
-| 5 | 登录成功后提示 `-bash: /opt/Xilinx/Vivado/2018.3/settings64.sh: 没有那个文件或目录` | Shell 启动脚本中 `source` 了一个不存在的 Vivado 环境脚本 | 根据需求删除或修正 `~/.bashrc` 中的 `source /opt/Xilinx/Vivado/.../settings64.sh` |
+| 3 | `ssh-copy-id …` → `Host key verification failed` | `~/.ssh/known_hosts` 保存了旧指纹，与当前 B 机不一致 | 在 A 机运行 `ssh-keygen -R xxx.xxx.xxx.xxx` 后重新连接并接受新指纹 |
+| 4 | `ssh-copy-id -i … user@…` → 多次提示密码错误 | B 机账号并非 `user`，实际用户名是 `l` | 在 B 机使用 `whoami` 查明用户名，改用 `ssh-copy-id -i … l@xxx.xxx.xxx.xxx` |
 
 ### 9.6 最终验证与日常操作
 
 - 再次确认密钥生效：
   ```bash
-  ssh l@10.19.139.133
+  ssh l@xxx.xxx.xxx.xxx
   ```
 - 退出会话：`exit` 或 `Ctrl+D`。
 - 若需清理主机指纹（例如 B 机重装）：
   ```bash
-  ssh-keygen -R 10.19.139.133
+  ssh-keygen -R xxx.xxx.xxx.xxx
   ```
 - 查看当前登录会话与网络：`who`, `w`, `ss -tnp`。
 
@@ -438,5 +437,5 @@ clang --target=riscv64-linux-gnu -static -g source.c -o program
 
 - 若要启用自定义端口，推荐 **保留 22 端口** 作为应急通道，并在确认 `ss -tlnp` 同时显示 `:22` 与 `:563` 后再调整 A 机连接命令。
 - 使用 VS Code Remote – SSH，可以在 A 机 VS Code 中直接开发 B 机上的代码。
-- 若需 GUI 程序，可结合 X11 转发（`ssh -Y l@10.19.139.133`）或远程桌面方案；注意开放必要端口并评估网络带宽。
+- 若需 GUI 程序，可结合 X11 转发（`ssh -Y l@xxx.xxx.xxx.xxx`）或远程桌面方案；注意开放必要端口并评估网络带宽。
 

@@ -322,7 +322,21 @@ clang --target=riscv64-linux-gnu -static -g source.c -o program
 | A 机 | Ubuntu 22.04.5 LTS | OpenSSH_8.9p1 Ubuntu-3ubuntu0.13 | `xxx.xxx.xxx.xxx` | 客户端，已存在 `~/.ssh/id_ed25519*` 密钥对 |
 | B 机 | Ubuntu 24.04.3 LTS | OpenSSH_9.6p1 Ubuntu-3ubuntu13.14 | `xxx.xxx.xxx.xxx` | 服务器，需要安装 `openssh-server` |
 
-### 9.2 连通性测试与 `ping` 详解
+### 9.2 本机 IP 查询与 `ping` 详解
+
+- 查看本机 IP：
+	```bash
+	ip addr show
+	ip -brief addr
+	hostname -I
+	ip route get 8.8.8.8
+	```
+	说明：
+	- `ip addr show` 输出所有网卡及 IPv4/IPv6；关注非 `lo` 的接口（如 `enp*`, `wlp*`）。
+	- `ip -brief addr` 为简表形式，字段更精炼。
+	- `hostname -I` 直接列出主机分配到的地址（不含 `127.0.0.1`）。
+	- `ip route get 8.8.8.8` 可快速得出访问公网时使用的源地址，特别适合多网卡场景。
+- `ping <目标IP>`：向目标发送 ICMP Echo 请求，验证网络连通性与时延。
 
 - `ping <目标IP>`：向目标发送 ICMP Echo 请求，验证网络连通性与时延。
 - 常用参数：
@@ -409,6 +423,14 @@ clang --target=riscv64-linux-gnu -static -g source.c -o program
 		 IdentityFile ~/.ssh/id_ed25519
 		 IdentitiesOnly yes
 	```
+	字段含义速查：
+	- `Host`：**客户端自定义别名**，输入 `ssh b-server` 时会套用该块配置，可取任意便于记忆的英文名称。
+	- `HostName`：远端主机的实际地址，可以是 IP 或域名。
+	- `User`：登录远端时使用的用户名，省得每次在命令里写 `l@` 前缀。
+	- `Port`：连接端口，默认 22；若服务端改了端口，这里需要同步更新。
+	- `IdentityFile`：指定使用哪把私钥，常见为 `~/.ssh/id_ed25519` 或 `id_rsa`。
+	- `IdentitiesOnly`：设为 `yes` 时只尝试上述私钥，避免因 `ssh-agent` 中其它密钥导致认证失败。
+
 	之后使用 `ssh b-server` 即可连接。
 
 	### 9.5 调试过程与故障清单
@@ -416,7 +438,7 @@ clang --target=riscv64-linux-gnu -static -g source.c -o program
 | 序号 | 现象 / 命令 | 根因分析 | 解决方案 |
 | :--- | :--- | :--- | :--- |
 | 1 | `ssh-copy-id user@B主机` → `Could not resolve hostname b…` | 使用了中文别名 “B主机”，DNS 无法解析 | 改用实际 IP 或在 `~/.ssh/config` 中定义英文 Host 别名 |
-| 2 | `ssh -p 563 …` → `Connection refused`，`ss -tlnp` 仅见 `:22` | 仅把 `Port 22` 改成 `Port 563`，sshd 未成功监听自定义端口 | 在 `sshd_config` 中同时保留 `Port 22` 与 `Port 563`，`sudo sshd -t && sudo systemctl reload ssh`，并 `sudo ufw allow 563/tcp`；若仍失败，先回退使用 22 完成部署 |
+| 2 | `ssh -p <自定义端口> …` → `Connection refused`，`ss -tlnp` 仅见 `:22` | 仅修改了客户端连接端口，但服务端未正确监听自定义端口 | 回到默认端口 22 完成部署；若未来要启用新端口，需要在 `sshd_config` 中正确添加并放行防火墙后再测试 |
 | 3 | `ssh-copy-id …` → `Host key verification failed` | `~/.ssh/known_hosts` 保存了旧指纹，与当前 B 机不一致 | 在 A 机运行 `ssh-keygen -R xxx.xxx.xxx.xxx` 后重新连接并接受新指纹 |
 | 4 | `ssh-copy-id -i … user@…` → 多次提示密码错误 | B 机账号并非 `user`，实际用户名是 `l` | 在 B 机使用 `whoami` 查明用户名，改用 `ssh-copy-id -i … l@xxx.xxx.xxx.xxx` |
 
@@ -435,7 +457,7 @@ clang --target=riscv64-linux-gnu -static -g source.c -o program
 
 ### 9.7 后续可选增强
 
-- 若要启用自定义端口，推荐 **保留 22 端口** 作为应急通道，并在确认 `ss -tlnp` 同时显示 `:22` 与 `:563` 后再调整 A 机连接命令。
+- 若要启用自定义端口，推荐 **保留 22 端口** 作为应急通道，并在确认服务端监听新端口且防火墙放行后，再更新 A 机的连接命令。
 - 使用 VS Code Remote – SSH，可以在 A 机 VS Code 中直接开发 B 机上的代码。
 - 若需 GUI 程序，可结合 X11 转发（`ssh -Y l@xxx.xxx.xxx.xxx`）或远程桌面方案；注意开放必要端口并评估网络带宽。
 
